@@ -1,0 +1,13 @@
+# Standard Python stuff
+*.pyc
+/.env/
+/*.egg-info/
+/.eggs/
+/attic/
+/build/
+/dist/
+
+# editor stuff
+*.sw?
+
+run.py
