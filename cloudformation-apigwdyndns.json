@@ -1,0 +1,371 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "AWS CloudFormation template that contains a single Lambda function behind an API Gateway",
+
+	"Parameters": {
+		"EC2Region": {
+			"Description": "Region short code name where your EC2 Security Group is located (ie: eu-west-1).",
+			"Type": "String",
+			"AllowedValues": ["ap-south-1", "eu-west-2", "eu-west-1", "ap-northeast-2", "ap-northeast-1", "sa-east-1", "ca-central-1", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2"]
+		},
+		"SgName": {
+			"Description": "EC2 Security Group Name to update.",
+			"Type": "String"
+		},
+		"Domain": {
+			"Description": "Domain name to update (Route53 Hosted Zone name).",
+			"Type": "String"
+		}
+	},
+	"Metadata": {
+		"AWS::CloudFormation::Interface": {
+			"ParameterGroups": [{
+					"Label": {
+						"default": "EC2 Security Group details"
+					},
+					"Parameters": ["EC2Region", "SgName"]
+				},
+				{
+					"Label": {
+						"default": "Domain Name details"
+					},
+					"Parameters": ["Domain"]
+				}
+			],
+			"ParameterLabels": {
+				"EC2Region": {
+					"default": "EC2 Region code"
+				},
+				"SgName": {
+					"default": "EC2 Security Group Name"
+				},
+				"Domain": {
+					"default": "Domain Name"
+				}
+			}
+		}
+	},
+	"Resources": {
+
+		"ApiGwDynDnsManagedPolicy": {
+			"Type": "AWS::IAM::ManagedPolicy",
+			"Properties": {
+				"Description": "Allow lambda to access Route53 and Ec2 Security Groups",
+				"Path": "/",
+				"PolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Effect": "Allow",
+						"Action": [
+							"ec2:AuthorizeSecurityGroupEgress",
+							"ec2:AuthorizeSecurityGroupIngress",
+							"ec2:CreateSecurityGroup",
+							"ec2:DeleteSecurityGroup",
+							"ec2:DescribeSecurityGroups",
+							"ec2:DescribeStaleSecurityGroups",
+							"ec2:RevokeSecurityGroupEgress",
+							"ec2:RevokeSecurityGroupIngress",
+							"route53:GetChange",
+							"route53:ListHostedZonesByName",
+							"route53:ListResourceRecordSets",
+							"route53:ChangeResourceRecordSets"
+						],
+						"Resource": ["*"]
+					}]
+				}
+			}
+		},
+
+		"apigwdyndns": {
+			"Type": "AWS::Lambda::Function",
+			"Properties": {
+				"Code": {
+					"S3Bucket": "aurelien-requiem-ap-southeast-2",
+					"S3Key": "apigwdyndns.zip"
+				},
+				"Description": "DynDNS and DynSG via API Gateway and Lambda",
+				"Timeout": "60",
+				"FunctionName": "apigwdyndns",
+				"Handler": "apigwdyndns.lambda_handler",
+				"Role": {
+					"Fn::GetAtt": ["LambdaExecutionRole", "Arn"]
+				},
+				"Runtime": "python2.7"
+			}
+		},
+
+		"LambdaExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Effect": "Allow",
+						"Principal": {
+							"Service": ["lambda.amazonaws.com"]
+						},
+						"Action": ["sts:AssumeRole"]
+					}]
+				},
+				"ManagedPolicyArns": [
+					"arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+					{
+						"Ref": "ApiGwDynDnsManagedPolicy"
+					}
+				]
+			}
+		},
+
+		"ApiGwDynDnsApi": {
+			"Type": "AWS::ApiGateway::RestApi",
+			"Properties": {
+				"Name": "DynDNS API",
+				"Description": "API used for DynDNS and DynSG requests",
+				"FailOnWarnings": true
+			}
+		},
+
+		"LambdaPermission": {
+			"Type": "AWS::Lambda::Permission",
+			"Properties": {
+				"Action": "lambda:invokeFunction",
+				"FunctionName": {
+					"Fn::GetAtt": ["apigwdyndns", "Arn"]
+				},
+				"Principal": "apigateway.amazonaws.com",
+				"SourceArn": {
+					"Fn::Join": ["", ["arn:aws:execute-api:", {
+						"Ref": "AWS::Region"
+					}, ":", {
+						"Ref": "AWS::AccountId"
+					}, ":", {
+						"Ref": "ApiGwDynDnsApi"
+					}, "/*"]]
+				}
+			}
+		},
+
+		"ApiGatewayCloudWatchLogsRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Effect": "Allow",
+						"Principal": {
+							"Service": ["apigateway.amazonaws.com"]
+						},
+						"Action": ["sts:AssumeRole"]
+					}]
+				},
+				"Policies": [{
+					"PolicyName": "ApiGatewayLogsPolicy",
+					"PolicyDocument": {
+						"Version": "2012-10-17",
+						"Statement": [{
+							"Effect": "Allow",
+							"Action": [
+								"logs:CreateLogGroup",
+								"logs:CreateLogStream",
+								"logs:DescribeLogGroups",
+								"logs:DescribeLogStreams",
+								"logs:PutLogEvents",
+								"logs:GetLogEvents",
+								"logs:FilterLogEvents"
+							],
+							"Resource": "*"
+						}]
+					}
+				}]
+			}
+		},
+
+		"ApiGatewayAccount": {
+			"Type": "AWS::ApiGateway::Account",
+			"Properties": {
+				"CloudWatchRoleArn": {
+					"Fn::GetAtt": ["ApiGatewayCloudWatchLogsRole", "Arn"]
+				}
+			}
+		},
+
+		"ApiGwDynDnsApiStage": {
+			"DependsOn": ["ApiGatewayAccount"],
+			"Type": "AWS::ApiGateway::Stage",
+			"Properties": {
+				"DeploymentId": {
+					"Ref": "ApiDeployment"
+				},
+				"MethodSettings": [{
+					"DataTraceEnabled": true,
+					"HttpMethod": "*",
+					"LoggingLevel": "INFO",
+					"ResourcePath": "/*"
+				}],
+				"Variables": {
+					"ec2region": {
+						"Ref": "EC2Region"
+					},
+					"sgname": {
+						"Ref": "SgName"
+					},
+					"domain": {
+						"Ref": "Domain"
+					}
+				},
+				"RestApiId": {
+					"Ref": "ApiGwDynDnsApi"
+				},
+				"StageName": "v0"
+			}
+		},
+
+		"ApiDeployment": {
+			"Type": "AWS::ApiGateway::Deployment",
+			"DependsOn": ["GetRequest", "PostRequest"],
+			"Properties": {
+				"RestApiId": {
+					"Ref": "ApiGwDynDnsApi"
+				},
+				"StageName": "DummyStagev0"
+			}
+		},
+
+		"ApiGwDynDnsGetResource": {
+			"Type": "AWS::ApiGateway::Resource",
+			"Properties": {
+				"RestApiId": {
+					"Ref": "ApiGwDynDnsApi"
+				},
+				"ParentId": {
+					"Fn::GetAtt": ["ApiGwDynDnsApi", "RootResourceId"]
+				},
+				"PathPart": "GetState"
+			}
+		},
+
+		"ApiGwDynDnsSetResource": {
+			"Type": "AWS::ApiGateway::Resource",
+			"Properties": {
+				"RestApiId": {
+					"Ref": "ApiGwDynDnsApi"
+				},
+				"ParentId": {
+					"Fn::GetAtt": ["ApiGwDynDnsApi", "RootResourceId"]
+				},
+				"PathPart": "SetState"
+			}
+		},
+
+		"GetRequest": {
+			"DependsOn": "LambdaPermission",
+			"Type": "AWS::ApiGateway::Method",
+			"Properties": {
+				"AuthorizationType": "NONE",
+				"HttpMethod": "GET",
+				"Integration": {
+					"Type": "AWS",
+					"IntegrationHttpMethod": "POST",
+					"Uri": {
+						"Fn::Join": ["", ["arn:aws:apigateway:", {
+							"Ref": "AWS::Region"
+						}, ":lambda:path/2015-03-31/functions/", {
+							"Fn::GetAtt": ["apigwdyndns", "Arn"]
+						}, "/invocations"]]
+					},
+					"IntegrationResponses": [{
+						"StatusCode": 200
+					}],
+					"RequestTemplates": {
+						"application/json": {
+							"Fn::Join": ["", [
+								"{",
+								"  \"httpMethod\": \"$context.httpMethod\",",
+								"  \"sourceIp\": \"$context.identity.sourceIp\",",
+								"  \"ec2region\": \"$stageVariables.ec2region\",",
+								"  \"sgname\": \"$stageVariables.sgname\",",
+								"  \"domain\": \"$stageVariables.domain\",",
+								"  \"name\": \"$input.params('name')\"",
+								"}"
+							]]
+						}
+					}
+				},
+				"RequestParameters": {
+					"method.request.querystring.name": false
+				},
+				"ResourceId": {
+					"Ref": "ApiGwDynDnsGetResource"
+				},
+				"RestApiId": {
+					"Ref": "ApiGwDynDnsApi"
+				},
+				"MethodResponses": [{
+					"StatusCode": 200
+				}]
+			}
+		},
+		"PostRequest": {
+			"DependsOn": "LambdaPermission",
+			"Type": "AWS::ApiGateway::Method",
+			"Properties": {
+				"AuthorizationType": "NONE",
+				"HttpMethod": "POST",
+				"Integration": {
+					"Type": "AWS",
+					"IntegrationHttpMethod": "POST",
+					"Uri": {
+						"Fn::Join": ["", ["arn:aws:apigateway:", {
+							"Ref": "AWS::Region"
+						}, ":lambda:path/2015-03-31/functions/", {
+							"Fn::GetAtt": ["apigwdyndns", "Arn"]
+						}, "/invocations"]]
+					},
+					"IntegrationResponses": [{
+						"StatusCode": 200
+					}],
+					"RequestTemplates": {
+						"application/json": {
+							"Fn::Join": ["", [
+								"{",
+								"  \"httpMethod\": \"$context.httpMethod\",",
+								"  \"sourceIp\": \"$context.identity.sourceIp\",",
+								"  \"ec2region\": \"$stageVariables.ec2region\",",
+								"  \"sgname\": \"$stageVariables.sgname\",",
+								"  \"domain\": \"$stageVariables.domain\",",
+								"  \"name\": \"$input.params('name')\"",
+								"}"
+							]]
+						}
+					}
+				},
+				"RequestParameters": {
+					"method.request.querystring.name": false
+				},
+				"ResourceId": {
+					"Ref": "ApiGwDynDnsSetResource"
+				},
+				"RestApiId": {
+					"Ref": "ApiGwDynDnsApi"
+				},
+				"MethodResponses": [{
+					"StatusCode": 200
+				}]
+			}
+		}
+
+	},
+
+	"Outputs": {
+		"RootUrl": {
+			"Description": "Root URL of the API gateway",
+			"Value": {
+				"Fn::Join": ["", ["https://", {
+					"Ref": "ApiGwDynDnsApi"
+				}, ".execute-api.", {
+					"Ref": "AWS::Region"
+				}, ".amazonaws.com"]]
+			}
+		}
+	}
+}
