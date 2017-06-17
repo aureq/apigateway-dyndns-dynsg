@@ -11,7 +11,7 @@ case "$ID" in
 	;;
 esac
 
-FILES="apigwdyndns.py"
+FILES="apigwdyndns.py route53_dns.py ovh_dns.py"
 TARGET="build"
 DIST="dist"
 DEST="$DIST/apigwdyndns.zip"
