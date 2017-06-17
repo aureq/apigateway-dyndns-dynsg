@@ -53,15 +53,12 @@ def _update_security_group(logger, name, sourceIp, rules, region):
     r = ec2.describe_security_groups(**kwargs)
     sg = r['SecurityGroups'][0]
     for ingress in sg['IpPermissions']:
-        print json.dumps(ingress, ensure_ascii=False, sort_keys=True)
         kwargs = {
             'DryRun': False,
             'GroupName': name,
             'IpPermissions': [ ingress ]
         }
         r2 = ec2.revoke_security_group_ingress(**kwargs)
-        print json.dumps(r2, ensure_ascii=False, sort_keys=True)
-        print ""
 
     for proto, ports in rules.iteritems():
         for port in ports:
@@ -75,10 +72,6 @@ def _update_security_group(logger, name, sourceIp, rules, region):
                 'CidrIp': '{0}/32'.format(sourceIp)
             }
             r = ec2.authorize_security_group_ingress(**kwargs)
-            print json.dumps(r, ensure_ascii=False, sort_keys=True)
-            print ""
-
-    
 
 def get_settings_handler(event, context):
     logger.debug("[GET] Starting execution of API Gateway DynDNS")
