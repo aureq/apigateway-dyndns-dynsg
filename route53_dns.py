@@ -104,7 +104,7 @@ def _create_route53_record(logger, zone_id, zone_name, rr_fqdn, rr_type, rr_valu
         'ResourceRecordSet': {
             'Name': rr_fqdn,
             'Type': rr_type,
-            'TTL': 20,
+            'TTL': 60,
             'ResourceRecords': [{
                 'Value': rr_value
             }]
