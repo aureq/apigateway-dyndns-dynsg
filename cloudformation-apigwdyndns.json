@@ -12,8 +12,17 @@
 			"Description": "EC2 Security Group Name to update.",
 			"Type": "String"
 		},
+		"DnsProvider": {
+			"Description": "DNS provider.",
+			"Type": "String",
+			"AllowedValues": ["route53", "ovh"]
+		},
 		"Domain": {
-			"Description": "Domain name to update (Route53 Hosted Zone name).",
+			"Description": "Domain name as hosted by your DNS provider.",
+			"Type": "String"
+		},
+		"DnsAuth": {
+			"Description": "DNS provider authentication details (JSON encoded). This is usually not required for Route53.",
 			"Type": "String"
 		}
 	},
@@ -29,7 +38,7 @@
 					"Label": {
 						"default": "Domain Name details"
 					},
-					"Parameters": ["Domain"]
+					"Parameters": ["DnsProvider", "Domain", "DnsAuth"]
 				}
 			],
 			"ParameterLabels": {
@@ -39,8 +48,14 @@
 				"SgName": {
 					"default": "EC2 Security Group Name"
 				},
+				"DnsProvider": {
+					"default": "DNS Provider"
+				},
 				"Domain": {
 					"default": "Domain Name"
+				},
+				"DnsAuth": {
+					"default": "DNS Authentication"
 				}
 			}
 		}
@@ -209,8 +224,16 @@
 					"sgname": {
 						"Ref": "SgName"
 					},
+					"dnsprovider": {
+						"Ref": "DnsProvider"
+					},
 					"domain": {
 						"Ref": "Domain"
+					},
+					"dnsauth": {
+						"Fn::Base64": {
+							"Ref": "DnsAuth"
+						}
 					}
 				},
 				"RestApiId": {
@@ -332,8 +355,9 @@
 								"  \"sourceIp\": \"$context.identity.sourceIp\",",
 								"  \"ec2region\": \"$stageVariables.ec2region\",",
 								"  \"sgname\": \"$stageVariables.sgname\",",
+								"  \"dnsProvider\": \"$stageVariables.dnsprovider\",",
 								"  \"domain\": \"$stageVariables.domain\",",
-								"  \"dnsProvider\": \"$input.params('dnsProvider')\",",
+								"  \"dnsAuth\": \"$stageVariables.dnsauth\",",
 								"  \"name\": \"$input.params('name')\"",
 								"}"
 							]]
