@@ -333,6 +333,7 @@
 								"  \"ec2region\": \"$stageVariables.ec2region\",",
 								"  \"sgname\": \"$stageVariables.sgname\",",
 								"  \"domain\": \"$stageVariables.domain\",",
+								"  \"dnsProvider\": \"$input.params('dnsProvider')\",",
 								"  \"name\": \"$input.params('name')\"",
 								"}"
 							]]
