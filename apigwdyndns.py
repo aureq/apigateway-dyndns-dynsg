@@ -43,7 +43,7 @@ def _get_dns_record(logger, fqdn):
     return answer
 
 def _update_security_group(logger, name, sourceIp, rules, region):
-    
+
     ec2 = boto3.client('ec2', region_name=region)
 
     kwargs = {
@@ -83,7 +83,7 @@ def get_settings_handler(event, context):
         'sourceIp': event['sourceIp'],
         'previousIp': previousIp
     }
-        
+
 
 def update_settings_handler(event, context):
     logger.debug("[POST] Starting execution of API Gateway DynDNS")
@@ -131,7 +131,7 @@ def lambda_handler(event, context):
     }
 
     routing = {
-        'GET': get_settings_handler, 
+        'GET': get_settings_handler,
         'POST': update_settings_handler
     }
 
