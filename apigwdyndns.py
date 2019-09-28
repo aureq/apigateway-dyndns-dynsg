@@ -112,7 +112,7 @@ def update_settings_handler(event, context):
     if r != True:
         return r
 
-    if event['name'] == 'aurelien':
+    if event['name'] == 'aurelien' and event['sgname']:
         _update_security_group(logger, event['sgname'], event['sourceIp'], event['sgrules'], event['ec2region'])
 
     return {

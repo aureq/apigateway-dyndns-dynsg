@@ -306,7 +306,6 @@
 								"  \"httpMethod\": \"$context.httpMethod\",",
 								"  \"sourceIp\": \"$context.identity.sourceIp\",",
 								"  \"ec2region\": \"$stageVariables.ec2region\",",
-								"  \"sgname\": \"$stageVariables.sgname\",",
 								"  \"domain\": \"$stageVariables.domain\",",
 								"  \"name\": \"$input.params('name')\"",
 								"}"
