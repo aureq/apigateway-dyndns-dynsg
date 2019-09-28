@@ -145,7 +145,7 @@
 				"Role": {
 					"Fn::GetAtt": ["LambdaExecutionRole", "Arn"]
 				},
-				"Runtime": "python2.7"
+				"Runtime": "python3.6"
 			}
 		},
 
