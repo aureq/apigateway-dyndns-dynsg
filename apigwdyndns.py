@@ -62,7 +62,6 @@ def _update_security_group(logger, name, sourceIp, rules, region):
 
     for proto, ports in rules.iteritems():
         for port in ports:
-            print "proto: {0}, port: {1}".format(proto, port)
             kwargs = {
                 'DryRun': False,
                 'GroupName': name,
