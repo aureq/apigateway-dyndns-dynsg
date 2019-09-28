@@ -28,26 +28,19 @@ bootstrap_rpm () {
     gcc \
     libffi-devel \
     openssl-devel \
-    python \
-    python-devel \
-    python-virtualenv
+    python36-virtualenv \
+    python36-pip
 }
 
-if [ -f /etc/debian_version ]
-then
-  bootstrap_deb
-elif [ -f /etc/redhat-release ]
-then
-  bootstrap_rpm
-elif [ -f /etc/os-release ]
+if [ -f /etc/os-release ]
 then
   . /etc/os-release
   case "$ID" in
     "amzn")
       bootstrap_rpm
-    ;;
-    "debian")
-      bootstrap_deb
+      exit
     ;;
   esac
 fi
+
+echo "You should run Amazon Linux for code Lambda functions"
