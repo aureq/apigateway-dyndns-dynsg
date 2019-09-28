@@ -25,6 +25,7 @@ mkdir $TARGET $DIST
 cp -pdr \
 	$(find .env/lib64/python3.6/site-packages/ -maxdepth 1 -not -path .env/lib64/python3.6/site-packages/) \
 	$(find .env/lib/python3.6/site-packages/ -maxdepth 1 -not -path .env/lib/python3.6/site-packages/) \
+	$(find .env/lib/python3.6/dist-packages/ -maxdepth 1 -not -path .env/lib/python3.6/dist-packages/ | grep -v 'pip$' | grep -v 'pip-' ) \
 	"$TARGET/"
 
 for F in $FILES; do
