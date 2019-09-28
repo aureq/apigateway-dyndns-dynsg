@@ -25,7 +25,7 @@
 				"us-east-2",
 				"us-west-1",
 				"us-west-2"
-                        ]
+		]
 		},
 		"SgName": {
 			"Description": "EC2 Security Group Name to update.",
@@ -43,6 +43,14 @@
 		"DnsAuth": {
 			"Description": "DNS provider authentication details (JSON encoded). This is usually not required for Route53.",
 			"Type": "String"
+		},
+		"LambdaFunctionS3Bucket": {
+			"Description": "S3 bucket where the Lambda function is stored.",
+			"Type": "String"
+		},
+		"LambdaFunctionS3Key": {
+			"Description": "Lambda function file name (pull path).",
+			"Type": "String"
 		}
 	},
 	"Metadata": {
@@ -58,6 +66,12 @@
 						"default": "Domain Name details"
 					},
 					"Parameters": ["DnsProvider", "Domain", "DnsAuth"]
+				},
+				{
+					"Label": {
+						"default": "Lambda function details"
+					},
+					"Parameters": ["LambdaFunctionS3Bucket", "LambdaFunctionS3Key"]
 				}
 			],
 			"ParameterLabels": {
@@ -75,7 +89,14 @@
 				},
 				"DnsAuth": {
 					"default": "DNS Authentication"
+				},
+				"LambdaFunctionS3Bucket": {
+					"default": "S3 Bucket name"
+				},
+				"LambdaFunctionS3Key": {
+					"default": "Lambda function file name"
 				}
+
 			}
 		}
 	},
@@ -114,8 +135,8 @@
 			"Type": "AWS::Lambda::Function",
 			"Properties": {
 				"Code": {
-					"S3Bucket": "aurelien-requiem-ap-southeast-2",
-					"S3Key": "apigwdyndns.zip"
+					"S3Bucket": { "Ref": "LambdaFunctionS3Bucket" },
+					"S3Key": { "Ref": "LambdaFunctionS3Key"}
 				},
 				"Description": "DynDNS and DynSG via API Gateway and Lambda",
 				"Timeout": "60",
