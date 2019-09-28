@@ -23,8 +23,8 @@ test ! -d "$DIST" || rm -rf $DIST
 mkdir $TARGET $DIST
 
 cp -pdr \
-	$(find .env/lib64/python2.7/site-packages/ -maxdepth 1 -not -path .env/lib64/python2.7/site-packages/) \
-	$(find .env/lib/python2.7/site-packages/ -maxdepth 1 -not -path .env/lib/python2.7/site-packages/) \
+	$(find .env/lib64/python3.6/site-packages/ -maxdepth 1 -not -path .env/lib64/python3.6/site-packages/) \
+	$(find .env/lib/python3.6/site-packages/ -maxdepth 1 -not -path .env/lib/python3.6/site-packages/) \
 	"$TARGET/"
 
 for F in $FILES; do
