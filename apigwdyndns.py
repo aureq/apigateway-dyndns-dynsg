@@ -35,8 +35,8 @@ def _get_dns_record(logger, fqdn):
     except dns.exception.DNSException:
         logger.error("[GET] Receive exception DNSException for '{0}'".format(fqdn))
 
-    if len(r.response.answer[0]) > 0:
-        for x in xrange(len(r.response.answer[0])): # if past executions have failed, ensure to iterte over all TXT records
+    if len(r.response.answer) > 0:
+        for x in range(len(r.response.answer[0])): # if past executions have failed, ensure to iterate over all TXT records
             answer = '{0}'.format(r.response.answer[0][x])
             logger.debug("[GET] Got '{0}', looking for '{1}'".format(answer, fqdn))
 

@@ -49,7 +49,7 @@ def ovh_update_dns(logger, event, context):
         }
 
     if result: # clean the DNS record from all previous value (because it's ephemeral)
-        for x in xrange(len(result)):
+        for x in range(len(result)):
             logger.debug("[ovh] Removing DNS entry '/domain/zone/{0}/record/{1}'".format(domain, result[x]))
             client.delete("/domain/zone/{0}/record/{1}".format(domain, result[x]))
 
