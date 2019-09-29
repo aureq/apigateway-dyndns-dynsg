@@ -60,7 +60,7 @@ def _update_security_group(logger, name, sourceIp, rules, region):
         }
         r2 = ec2.revoke_security_group_ingress(**kwargs)
 
-    for proto, ports in rules.iteritems():
+    for proto, ports in rules.items():
         for port in ports:
             kwargs = {
                 'DryRun': False,
